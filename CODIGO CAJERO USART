@@ -1,0 +1,144 @@
+#include <stdint.h>
+#include "stm32l053xx.h"
+#include "cmsis_compiler.h"
+#include "cmsis_gcc.h"
+#include "cmsis_version.h"
+#include "core_cm0plus.h"
+#include "mpu_armv7.h"
+#include "system_stm32l0xx.h"
+
+/* Definir saldo inicial */
+uint32_t saldo = 500; // Saldo inicial de $0 a 1000
+
+/*_____________________________________ FUNCIONES__________________ */
+void delay_ms(uint16_t n);
+void USART2_write(uint8_t ch);
+void USART2_putstring(uint8_t* StringPtr);
+void USART2_putstring_E(uint8_t* StringPtr);
+uint8_t USART2_read(void);
+void consultar_saldo(void);
+void realizar_deposito(uint32_t monto);
+void realizar_retiro(uint32_t monto);
+
+uint8_t mychar = 0x00;
+
+int main (void)
+{
+    /* Habilitar CLK para el puerto A */
+    RCC->IOPENR |= 1<<0;
+    /* Configurar PA5 como salida */
+    GPIOA->MODER &= ~(1<<11);
+
+    /* Configuración de pines para USART2 */
+    GPIOA->MODER &= ~(1<<4); // PA2 como Alternate Function
+    GPIOA->MODER &= ~(1<<6); // PA3 como Alternate Function
+    GPIOA->AFR[0] |= 1<<10; // PA2 mapeado como AF4
+    GPIOA->AFR[0] |= 1<<14; // PA3 mapeado como AF4
+
+    /* Configuración del periférico USART2 */
+    RCC->APB1ENR |= 1<<17; // Habilitar USART2
+    USART2->BRR = 218; // Configurar baud rate para 9600
+    USART2->CR1 |= (1<<2)|(1<<3); // Habilitar transmisor y receptor
+    USART2->CR1 |= 1<<0; // Habilitar USART2
+
+    while (1)
+    {
+        USART2_putstring_E("Escriba S para consultar saldo, D para depositar 10, R para retirar 10"); // mensaje de inicio y por cada operacion realizada
+        USART2_putstring_E("Escriba F para deposito 50, G para depositar 100, T para retirar 10, Y para retirar 100");
+        mychar = USART2_read();
+
+        if(mychar == 'S')  // caracter para consultar saldo
+        {
+            consultar_saldo();
+        }
+        else if(mychar == 'D')
+        {
+            realizar_deposito(10); // Depositar $10
+        }
+        else if(mychar == 'F')
+               {
+                   realizar_deposito(50); // Depositar $50
+               }
+        else if(mychar == 'G')
+               {
+                   realizar_deposito(100); // Depositar $100
+               }
+        else if(mychar == 'R')
+        {
+            realizar_retiro(10); // Retirar $10
+        }
+        else if(mychar == 'T')
+               {
+                   realizar_retiro(50); // Retirar $50
+               }
+        else if(mychar == 'Y')
+               {
+                   realizar_retiro(100); // Retirar $100
+               }
+    }
+}
+
+void consultar_saldo(void)
+{
+    char saldo_str[20];
+    snprintf(saldo_str, sizeof(saldo_str), "Saldo: $%lu\r\n", saldo);  // impresion del saldo disponible
+    USART2_putstring_E(saldo_str);
+}
+           // la variable monto es la determinada por la letra presionada o la seleccion de mychar.
+void realizar_deposito(uint32_t monto)
+{
+    saldo += monto;
+    USART2_putstring_E("Depósito exitoso.\r\n");  // imprime el mensaje de saldo depositado y lo suma a la variable saldo
+}
+
+void realizar_retiro(uint32_t monto)
+{
+    if (saldo >= monto)
+    {
+        saldo -= monto;
+        USART2_putstring_E("Retiro exitoso.\r\n");  // imprime el mensaje de retiro y lo resta de la variale salgo
+    }
+    else
+    {
+        USART2_putstring_E("Saldo insuficiente.\r\n");  // este mensaje saldra cuando no se tenga el saldo suficiente segun sea el retiro de dinero seleccionado
+    }
+}
+
+uint8_t USART2_read(void)
+{
+    while(!(USART2->ISR & 0x0020)){}
+    return USART2->RDR;
+}
+
+void USART2_write(uint8_t ch)
+{
+    while (!(USART2->ISR & 0x0080)){}
+    USART2->TDR = ch;
+}
+
+void USART2_putstring(uint8_t* StringPtr)
+{
+    while(*StringPtr != 0x00)
+    {
+        USART2_write(*StringPtr);
+        StringPtr++;
+    }
+}
+
+void USART2_putstring_E(uint8_t* StringPtr)
+{
+    while(*StringPtr != 0x00)
+    {
+        USART2_write(*StringPtr);
+        StringPtr++;
+    }
+    USART2_write(0x0D); // CR
+    USART2_write(0x0A); // NL
+}
+
+void delay_ms(uint16_t n)
+{
+    uint16_t i;
+    for(; n>0; n--)
+        for(i=0; i<140; i++);
+}
