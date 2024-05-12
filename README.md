@@ -58,4 +58,7 @@ por lo que en mi 5to retiro me muestra que el saldo es insuficiente y al consult
 ![image](https://github.com/ByronRC89/CAJERO-AUTOMATICO-CON-USART/assets/159856194/903b5fa2-5bdb-443e-a576-114af38be00c)
 
 
-adjunto video de una explicacion breve https://www.youtube.com/watch?v=CB4owvAr_TA 
+adjunto video de una explicacion breve https://www.youtube.com/watch?v=CB4owvAr_TA ![image](https://github.com/ByronRC89/CAJERO-AUTOMATICO-CON-USART/assets/159856194/d7321c08-1f15-453d-bb35-429bc9980edf)
+
+
+gracias.
